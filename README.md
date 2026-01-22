@@ -1,5 +1,9 @@
-Welcome to Cric Guesser '\n'
-This game let's you guess names of cricketers '\n'
-You have to choose their role and country '\n'
-You have 6 lives(you will lose after 6 wrong guesses) '\n'
+Welcome to Cric Guesser 
+
+This game let's you guess names of cricketers 
+
+You have to choose their role and country 
+
+You have 6 lives(you will lose after 6 wrong guesses) 
+
 Hope you enjoy my little project
