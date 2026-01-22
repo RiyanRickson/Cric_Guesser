@@ -30,7 +30,7 @@ def make_p2():
     #3rd panel (main game) function
     def make_p3():
         p3=wx.Panel(frame,style=wx.SIMPLE_BORDER,size=(700,700))
-        p3.SetBackgroundColour("light purple")
+        p3.SetBackgroundColour(" purple")
         p2.Hide()
         def cric_game(choice):
             #game variables
@@ -48,9 +48,10 @@ def make_p2():
                 1: [" 👽 ", "/|\\", "/  "],
                 0: [" 👽 ", "/|\\", "/ \\"]
             }
-            def update_display():
-                life=wx.StaticText(p3,label="\n".join(life_art[wrong]))
-                hint=wx.StaticText(p3,label=" ".join(hint))
+            
+            def update_display(x):
+                life=wx.StaticText(p3,label="\n".join(life_art[wrong]),pos=(400,10))
+                hintd=wx.StaticText(p3,label="".join(x),pos=(100,10))
             def start_game(event):
                 global answer, hint, wrong, guessed,choice 
                 words = REF.cric[choice]  #getting dataset
@@ -59,16 +60,18 @@ def make_p2():
                 hint = ["_" if c != " " else " " for c in answer]  #displaying spaces if any
                 hint[0] = answer[0] #displaying 1st letter
 
-                wrong = 6
+                wrong = 0
                 guessed = set()
 
-                update_display()
+                update_display(hint)
             start_btn = wx.Button(p3, label="Start Game")
             start_btn.Bind(wx.EVT_BUTTON, start_game)
 
+            letter=''
+
             def guess_letter(event):
-                global wrong 
-                letter=''
+                global wrong ,letter
+                
                 l=wx.TextCtrl(p3,pos=(100,200),size=(10,10))
                 b=wx.Button(p3,label="SAVE",pos=(100,210))
 
@@ -76,13 +79,25 @@ def make_p2():
                     global letter
                     letter+=l.GetValue()
                 b.Bind(wx.EVT_BUTTON,on_c)
-                
+            guessed.add(letter)
+            if letter in answer:
+                for i in range(len(answer)):
+                    if answer[i]==letter:
+                        hint[i]=letter
+            else:
+                hint[wrong]=answer[wrong]
+                wrong+=1
+            update_display(hint)
 
-
-
-
-            guess_btn = wx.Button(p3, label="Guess Letter")
+            if "_" not in hint:
+                msg=wx.StaticText(p3,label="🎉 YOU WIN!")
+            elif wrong == 0:
+                msg=wx.StaticText(p3,label=f"❌ YOU LOSE! Answer: {answer}")
+        
+            
+            guess_btn = wx.Button(p3, label="Guess Letter",pos=(100,40))
             guess_btn.Bind(wx.EVT_BUTTON, guess_letter)
+
 
 
 
