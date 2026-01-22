@@ -1,191 +1,186 @@
-import REF
-import test
-import random
 import wx
-app=wx.App()
-frame=wx.Frame(None,title="Guess the Cricketer",size=(700,700))
+import random
+import ref
 
-# panel 1
-p1=wx.Panel(frame,style=wx.SIMPLE_BORDER)
-p1.SetBackgroundColour("light blue")
+# ================= GLOBAL VARIABLES =================
+role_choice = ""
+country_choice = ""
+answer = ""
+hint = []
+wrong_guesses = 0
+guessed_letters = set()
 
-txt=wx.StaticText(p1,label="WELCOME TO GUESS THE CRICKETER🏏\nRULES:\nYou will have 6 chances to guess the correct name.Your life will be displayed by the graphic",pos=(0,0))
-txt1=wx.StaticText(p1,label="CHOOSE PLAYER ROLE ",pos=(250,50))
-txt1.SetFont(wx.Font(16,wx.FONTFAMILY_SWISS,wx.FONTSTYLE_NORMAL,wx.FONTWEIGHT_BOLD))
+# FULL LIFE AT 6 → DECREASES ON WRONG GUESSES
+life_art = {
+    6: [" O ", "/|\\", "/ \\"],   # FULL
+    5: [" O ", "/|\\", "/  "],
+    4: [" O ", "/|\\", "   "],
+    3: [" O ", "/| ", "   "],
+    2: [" O ", " | ", "   "],
+    1: [" O ", "   ", "   "],
+    0: ["   ", "   ", "   "]    # DEAD
+}
 
-#main buttons
-ba=wx.Button(p1,label="BATSMEN",pos=(300,100),size=(100,20))
-bo=wx.Button(p1,label="BOWLERS",pos=(300,200),size=(100,20))
-al=wx.Button(p1,label="ALL ROUNDERS",pos=(300,300),size=(100,20))
-wo=wx.Button(p1,label="WOMEN",pos=(300,300),size=(100,20))
+# FUNCTIONS 
+def choose_role(event):
+    global role_choice
+    role_choice = event.GetEventObject().GetLabel()[0]
+    status.SetLabel(f"Role selected")
 
+def choose_country(event):
+    global country_choice
+    country_choice = event.GetEventObject().GetLabel()[0]
+    status.SetLabel(f"Country selected")
 
+def start_game(event):
+    global answer, hint, wrong_guesses, guessed_letters
 
-#2nd panel function
-def make_p2():
-    p2=wx.Panel(frame,style=wx.SIMPLE_BORDER,size=(700,700))
-    p2.SetBackgroundColour("light blue")
-    p1.Hide()
+    if not role_choice or not country_choice:
+        msg.SetLabel("Select role and country first")
+        return
 
-    #3rd panel (main game) function
-    def make_p3():
-        p3=wx.Panel(frame,style=wx.SIMPLE_BORDER,size=(700,700))
-        p3.SetBackgroundColour(" purple")
-        p2.Hide()
-        def cric_game(choice):
-            #game variables
-            answer = ""
-            hint = []
-            wrong = 6
-            guessed = set()
+    code = role_choice + country_choice
+    answer = random.choice(ref.cric[code]).lower()
 
-            life_art = {
-                6: ["   ", "   ", "   "],
-                5: [" 👽 ", "   ", "   "],
-                4: [" 👽 ", " | ", "   "],
-                3: [" 👽 ", "/| ", "   "],
-                2: [" 👽 ", "/|\\", "   "],
-                1: [" 👽 ", "/|\\", "/  "],
-                0: [" 👽 ", "/|\\", "/ \\"]
-            }
-            
-            def update_display(x):
-                life=wx.StaticText(p3,label="\n".join(life_art[wrong]),pos=(400,10))
-                hintd=wx.StaticText(p3,label="".join(x),pos=(100,10))
-            def start_game(event):
-                global answer, hint, wrong, guessed,choice 
-                words = REF.cric[choice]  #getting dataset
+    hint = ["_" if c != " " else " " for c in answer]
+    hint[0] = answer[0]
 
-                answer = random.choice(words).lower()  #getting name 
-                hint = ["_" if c != " " else " " for c in answer]  #displaying spaces if any
-                hint[0] = answer[0] #displaying 1st letter
+    wrong_guesses = 0
+    guessed_letters.clear()
 
-                wrong = 0
-                guessed = set()
+    update_ui("Game started")
 
-                update_display(hint)
-            start_btn = wx.Button(p3, label="Start Game")
-            start_btn.Bind(wx.EVT_BUTTON, start_game)
+def guess_letter(event):
+    global wrong_guesses
 
-            letter=''
+    if not answer:
+        msg.SetLabel("Start a game first")
+        return
 
-            def guess_letter(event):
-                global wrong ,letter
-                
-                l=wx.TextCtrl(p3,pos=(100,200),size=(10,10))
-                b=wx.Button(p3,label="SAVE",pos=(100,210))
+    g = guess.GetValue().lower()
+    guess.SetValue("")
 
-                def on_c(event):
-                    global letter
-                    letter+=l.GetValue()
-                b.Bind(wx.EVT_BUTTON,on_c)
-            guessed.add(letter)
-            if letter in answer:
-                for i in range(len(answer)):
-                    if answer[i]==letter:
-                        hint[i]=letter
-            else:
-                hint[wrong]=answer[wrong]
-                wrong+=1
-            update_display(hint)
+    if len(g) != 1 or not g.isalpha():
+        update_ui("Enter ONE letter only")
+        return
 
-            if "_" not in hint:
-                msg=wx.StaticText(p3,label="🎉 YOU WIN!")
-            elif wrong == 0:
-                msg=wx.StaticText(p3,label=f"❌ YOU LOSE! Answer: {answer}")
-        
-            
-            guess_btn = wx.Button(p3, label="Guess Letter",pos=(100,40))
-            guess_btn.Bind(wx.EVT_BUTTON, guess_letter)
+    if g in guessed_letters:
+        update_ui("Already guessed")
+        return
 
+    guessed_letters.add(g)
+    correct = False
 
+    if g in answer:
+        correct = True
+        for i in range(len(answer)):
+            if answer[i] == g:
+                hint[i] = g
+    else:
+        wrong_guesses += 1   
 
+    if "_" not in hint:
+        update_ui("YOU WIN!")
+    elif wrong_guesses >= 6:
+        update_ui(f"YOU LOSE! Answer: {answer}")
+    else:
+        update_ui("Correct guess" if correct else "Wrong guess")
 
+def play_again(event):
+    global role_choice, country_choice
+    global answer, hint, wrong_guesses, guessed_letters
 
+    role_choice = ""
+    country_choice = ""
+    answer = ""
+    hint = []
+    wrong_guesses = 0
+    guessed_letters.clear()
 
+    status.SetLabel("Select role and country")
+    msg.SetLabel("Game reset. Choose again.")
+    word_label.SetLabel("")
+    guess.SetValue("")
+    life_label.SetLabel("\n".join(life_art[6]))  
 
+def update_ui(message):
+    lives_left = max(0, 6 - wrong_guesses)
 
+    life_label.SetLabel("\n".join(life_art[lives_left]))
+    word_label.SetLabel(" ".join(hint))
+    msg.SetLabel(message)
 
+# basic wx frame
+app = wx.App()
+frame = wx.Frame(None, title="Guess The Cricketer", size=(520, 620))
+panel = wx.Panel(frame)
 
+panel.SetBackgroundColour(wx.Colour(173, 216, 230))
 
+main_vbox = wx.BoxSizer(wx.VERTICAL)
 
-        global choice
-        cric_game(choice)
+# role selection
+main_vbox.Add(wx.StaticText(panel, label="Choose Role"), 0, wx.ALL, 5)
+role_box = wx.BoxSizer(wx.HORIZONTAL)
 
-    txt2=wx.StaticText(p2,label="CHOOSE PLAYER COUNTRY ",pos=(250,10))
-    txt2.SetFont(wx.Font(16,wx.FONTFAMILY_SWISS,wx.FONTSTYLE_NORMAL,wx.FONTWEIGHT_BOLD))
-    ind=wx.Button(p2,label="INDIA",pos=(300,100),size=(100,20))
-    aus=wx.Button(p2,label="AUSTRALIA",pos=(300,200),size=(100,20))
-    eng=wx.Button(p2,label="ENGLAND",pos=(300,300),size=(100,20))
-    nz=wx.Button(p2,label="NEW ZEALAND",pos=(300,400),size=(100,20))
-    sa=wx.Button(p2,label="SOUTH AFRICA",pos=(300,500),size=(100,20))
-    wi=wx.Button(p2,label="WEST INDIES",pos=(300,600),size=(100,20))
+for label in ["1 Batsman", "2 All-Rounder", "3 Bowler", "4 Women"]:
+    btn = wx.Button(panel, label=label)
+    btn.Bind(wx.EVT_BUTTON, choose_role)
+    role_box.Add(btn, 1, wx.ALL, 2)
 
-    #p2 events 
-    def c_ind(event):
-        global choice
-        choice+='1'
-        make_p3()
-    def c_aus(event):
-        global choice
-        choice+='2'
-    def c_eng(event):
-        global choice
-        choice+='3'
-    def c_nz(event):
-        global choice
-        choice+='4'
-    def c_sa(event):
-        global choice
-        choice+='5'
-    def c_wi(event):
-        global choice
-        choice+='6'
+main_vbox.Add(role_box, 0, wx.EXPAND)
 
-    #p2 event binding
-    ind.Bind(wx.EVT_BUTTON,c_ind)
-    aus.Bind(wx.EVT_BUTTON,c_aus)
-    eng.Bind(wx.EVT_BUTTON,c_eng)
-    nz.Bind(wx.EVT_BUTTON,c_nz)
-    sa.Bind(wx.EVT_BUTTON,c_sa)
-    wi.Bind(wx.EVT_BUTTON,c_wi)
+# country selection
+main_vbox.Add(wx.StaticText(panel, label="Choose Country"), 0, wx.ALL, 5)
+country_box = wx.BoxSizer(wx.HORIZONTAL)
 
-choice=''
-#panel1  button events
-def c_ba(event):
-    global choice
-    choice+='1'
-    make_p2()
+for label in ["1 India", "2 Australia", "3 England", "4 NZ", "5 SA", "6 WI"]:
+    btn = wx.Button(panel, label=label)
+    btn.Bind(wx.EVT_BUTTON, choose_country)
+    country_box.Add(btn, 1, wx.ALL, 2)
 
-def c_bo(event):
-    global choice
-    choice+='2'
-    make_p2()
+main_vbox.Add(country_box, 0, wx.EXPAND)
 
+# choice
+status = wx.StaticText(panel, label="Select role and country")
+main_vbox.Add(status, 0, wx.ALL, 5)
 
-def c_al(event):
-    global choice
-    choice+='3'
-    make_p2()
+# start button
+start_btn = wx.Button(panel, label="Start Game")
+start_btn.Bind(wx.EVT_BUTTON, start_game)
+main_vbox.Add(start_btn, 0, wx.ALL | wx.CENTER, 5)
 
+# life display
+life_label = wx.StaticText(panel, label="", style=wx.ALIGN_LEFT)
+life_label.SetMinSize((120, 60))
+life_label.SetFont(wx.Font(14, wx.FONTFAMILY_TELETYPE,
+                           wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+life_label.SetLabel("\n".join(life_art[6]))  
 
-def c_wo(event):
-    global choice
-    make_p2()
-    choice+='4'
+word_label = wx.StaticText(panel, label="", style=wx.ALIGN_LEFT)
+word_label.SetMinSize((400, 40))
+word_label.SetFont(wx.Font(16, wx.FONTFAMILY_TELETYPE,
+                           wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
 
-#panel 1 event binding
-ba.Bind(wx.EVT_BUTTON,c_ba)
-bo.Bind(wx.EVT_BUTTON,c_bo)
-al.Bind(wx.EVT_BUTTON,c_al)
-wo.Bind(wx.EVT_BUTTON,c_wo)
+msg = wx.StaticText(panel, label="")
 
+main_vbox.Add(life_label, 0, wx.LEFT | wx.TOP, 20)
+main_vbox.Add(word_label, 0, wx.LEFT | wx.TOP, 20)
+main_vbox.Add(msg, 0, wx.ALL, 10)
 
+# user input one letter at a time
+guess = wx.TextCtrl(panel)
+main_vbox.Add(guess, 0, wx.EXPAND | wx.ALL, 5)
 
+guess_btn = wx.Button(panel, label="Guess Letter")
+guess_btn.Bind(wx.EVT_BUTTON, guess_letter)
+main_vbox.Add(guess_btn, 0, wx.ALL | wx.CENTER, 5)
 
+# play again button (resets entire game)
+play_again_btn = wx.Button(panel, label="Play Again")
+play_again_btn.Bind(wx.EVT_BUTTON, play_again)
+main_vbox.Add(play_again_btn, 0, wx.ALL | wx.CENTER, 5)
 
-
-
-
+panel.SetSizer(main_vbox)
 frame.Show()
 app.MainLoop()
